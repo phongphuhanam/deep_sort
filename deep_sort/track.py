@@ -77,7 +77,7 @@ class Track:
         self.detection_ids = []
         self.features_cnt = -1
 
-        if detection :
+        if detection is not None:
             self.detection_ids.append(detection.detection_id)
             if detection.feature is not None:
                 self.features.append(detection.feature)
