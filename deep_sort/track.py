@@ -64,7 +64,7 @@ class Track:
     """
 
     def __init__(self, mean, covariance, track_id, n_init, max_age,
-                 feature=None):
+                 detection=None):
         self.mean = mean
         self.covariance = covariance
         self.track_id = track_id
@@ -74,8 +74,14 @@ class Track:
 
         self.state = TrackState.Tentative
         self.features = []
-        if feature is not None:
-            self.features.append(feature)
+        self.detection_ids = []
+        self.features_cnt = -1
+
+        if detection :
+            self.detection_ids.append(detection.detection_id)
+            if detection.feature is not None:
+                self.features.append(detection.feature)
+                self.features_cnt += 1    
 
         self._n_init = n_init
         self._max_age = max_age
@@ -138,6 +144,8 @@ class Track:
         self.mean, self.covariance = kf.update(
             self.mean, self.covariance, detection.to_xyah())
         self.features.append(detection.feature)
+        self.detection_ids.append(detection.detection_id)
+        self.features_cnt += 1
 
         self.hits += 1
         self.time_since_update = 0
