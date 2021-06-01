@@ -1,6 +1,6 @@
 # vim: expandtab:ts=4:sw=4
 import numpy as np
-
+from functools import partial
 
 def _pdist(a, b):
     """Compute pair-wise squared distance between points in `a` and `b`.
@@ -75,7 +75,7 @@ def _nn_euclidean_distance(x, y):
     return np.maximum(0.0, distances.min(axis=0))
 
 
-def _nn_cosine_distance(x, y):
+def _nn_cosine_distance(x, y, data_is_normalized=False):
     """ Helper function for nearest neighbor distance metric (cosine).
 
     Parameters
@@ -92,7 +92,7 @@ def _nn_cosine_distance(x, y):
         smallest cosine distance to a sample in `x`.
 
     """
-    distances = _cosine_distance(x, y)
+    distances = _cosine_distance(x, y, data_is_normalized)
     return distances.min(axis=0)
 
 
@@ -126,7 +126,7 @@ class NearestNeighborDistanceMetric(object):
         if metric == "euclidean":
             self._metric = _nn_euclidean_distance
         elif metric == "cosine":
-            self._metric = _nn_cosine_distance
+            self._metric = partial(_nn_cosine_distance, data_is_normalized=True)
         else:
             raise ValueError(
                 "Invalid metric; must be either 'euclidean' or 'cosine'")

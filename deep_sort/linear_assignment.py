@@ -3,10 +3,11 @@ from __future__ import absolute_import
 import numpy as np
 
 try:
+    raise ImportError("Use linear_sum_assignment instead")
     from sklearn.utils.linear_assignment_ import linear_assignment
 except:
+    from scipy.optimize import linear_sum_assignment
     def linear_assignment(cost_matrix):
-        from scipy.optimize import linear_sum_assignment
         indices_3 = linear_sum_assignment(cost_matrix)
         indices = np.asarray(indices_3).transpose()
         return indices
