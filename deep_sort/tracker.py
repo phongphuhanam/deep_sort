@@ -39,6 +39,11 @@ class Tracker:
 
     def __init__(self, metric, max_iou_distance=0.7, max_age=30, n_init=3):
         self.metric = metric
+        if self.metric is not None:
+            self._match = self._match_with_features
+        else:
+            self._match = self._match_with_iou
+
         self.max_iou_distance = max_iou_distance
         self.max_age = max_age
         self.n_init = n_init
@@ -80,17 +85,35 @@ class Tracker:
 
         # Update distance metric.
         active_targets = [t.track_id for t in self.tracks if t.is_confirmed()]
-        features, targets = [], []
-        for track in self.tracks:
-            if not track.is_confirmed():
-                continue
-            features += track.features
-            targets += [track.track_id for _ in track.features]
-            track.features = []
-        self.metric.partial_fit(
-            np.asarray(features), np.asarray(targets), active_targets)
+        
+        if self.metric is not None:
+            features, targets = [], []
+            for track in self.tracks:
+                if not track.is_confirmed():
+                    continue
+                features += track.features
+                targets += [track.track_id for _ in track.features]
+                track.features = []
+            self.metric.partial_fit(
+                np.asarray(features), np.asarray(targets), active_targets)
 
-    def _match(self, detections):
+
+    def _match_with_iou(self, detections):
+        # Associate remaining tracks together with unconfirmed tracks using IOU.
+        iou_track_candidates = [
+            k for k in np.arange(len(self.tracks)) if
+            self.tracks[k].time_since_update == 1]
+
+        unmatched_detections = np.arange(len(detections))
+        matches, unmatched_tracks, unmatched_detections = \
+            linear_assignment.min_cost_matching(
+                iou_matching.iou_cost2, self.max_iou_distance, self.tracks,
+                detections, iou_track_candidates, unmatched_detections)
+
+        return matches, unmatched_tracks, unmatched_detections
+
+
+    def _match_with_features(self, detections):
 
         def gated_metric(tracks, dets, track_indices, detection_indices):
             features = np.array([dets[i].feature for i in detection_indices])

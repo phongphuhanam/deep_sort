@@ -26,10 +26,14 @@ class Detection(object):
 
     """
 
-    def __init__(self, tlwh, confidence, feature, detection_id = ()):
+    def __init__(self, tlwh, confidence, feature=None, detection_id = ()):
         self.tlwh = np.asarray(tlwh, dtype=np.float)
         self.confidence = float(confidence)
-        self.feature = np.asarray(feature, dtype=np.float32)
+        if feature is not None:
+            self.feature = np.asarray(feature, dtype=np.float32)
+        else:
+            self.feature = None
+            
         self.detection_id = detection_id
 
     def to_tlbr(self):
