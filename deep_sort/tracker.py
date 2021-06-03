@@ -83,6 +83,7 @@ class Tracker:
             self.tracks[track_idx].mark_missed()
         for detection_idx in unmatched_detections:
             self._initiate_track(detections[detection_idx])
+        
         self.tracks = [t for t in self.tracks if not t.is_deleted()]
         
         if self.metric is not None:
@@ -104,13 +105,18 @@ class Tracker:
         iou_track_candidates = [
             k for k in np.arange(len(self.tracks)) if
             self.tracks[k].time_since_update == 1]
+        
+        unmatched_tracks_a  = [
+            k for k in np.arange(len(self.tracks)) if
+            self.tracks[k].time_since_update > self.max_age]
 
         unmatched_detections = np.arange(len(detections))
-        matches, unmatched_tracks, unmatched_detections = \
+        matches, unmatched_tracks_b, unmatched_detections = \
             linear_assignment.min_cost_matching(
                 iou_matching.iou_cost2, self.max_iou_distance, self.tracks,
                 detections, iou_track_candidates, unmatched_detections)
 
+        unmatched_tracks = list(set(unmatched_tracks_a + unmatched_tracks_b))
         return matches, unmatched_tracks, unmatched_detections
 
 
