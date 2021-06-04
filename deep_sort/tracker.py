@@ -1,5 +1,6 @@
 # vim: expandtab:ts=4:sw=4
 from __future__ import absolute_import
+from collections import defaultdict
 import numpy as np
 from . import kalman_filter
 from . import linear_assignment
@@ -44,6 +45,7 @@ class Tracker:
             self.max_age = max_age
         else:
             self._match = self._match_with_iou
+            self._iou_cache = {}
             self.max_age = 1 # since ID is change rapidly, we dont need high max age
         
         self.max_iou_distance = max_iou_distance
@@ -102,6 +104,11 @@ class Tracker:
 
     def _match_with_iou(self, detections):
         # Associate remaining tracks together with unconfirmed tracks using IOU.
+        
+        def iou_metric(tracks, dets, track_indices, detection_indices):
+            iou_matching.iou_cost2(tracks, dets, track_indices, detection_indices)
+            pass
+
         iou_track_candidates = [
             k for k in np.arange(len(self.tracks)) if
             self.tracks[k].time_since_update == 1]
