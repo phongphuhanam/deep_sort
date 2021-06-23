@@ -45,8 +45,8 @@ class Tracker:
             self.max_age = max_age
         else:
             self._match = self._match_with_iou
-            self._iou_cache = {}
-            self.max_age = 1 # since ID is change rapidly, we dont need high max age
+            self.iou_cache = {}
+            self.max_age = 2 # since ID is change rapidly, we dont need high max age
         
         self.max_iou_distance = max_iou_distance
         self.n_init = n_init
@@ -106,12 +106,16 @@ class Tracker:
         # Associate remaining tracks together with unconfirmed tracks using IOU.
         
         def iou_metric(tracks, dets, track_indices, detection_indices):
-            iou_matching.iou_cost2(tracks, dets, track_indices, detection_indices)
-            pass
+            iou_match = iou_matching.iou_cost2(tracks, dets, track_indices, detection_indices)
+            self.iou_cache["id"] = {tracks[k].track_id:idx for idx,k in enumerate(track_indices)}
+            self.iou_cache["cost"] = iou_match.copy()
+            # if len(self.iou_cache["id"].keys()) == self.iou_cache["cost"].shape[0]:
+            #     print()
+            return iou_match
 
         iou_track_candidates = [
             k for k in np.arange(len(self.tracks)) if
-            self.tracks[k].time_since_update == 1]
+            self.tracks[k].time_since_update <= self.max_age]
         
         unmatched_tracks_a  = [
             k for k in np.arange(len(self.tracks)) if
@@ -120,7 +124,7 @@ class Tracker:
         unmatched_detections = np.arange(len(detections))
         matches, unmatched_tracks_b, unmatched_detections = \
             linear_assignment.min_cost_matching(
-                iou_matching.iou_cost2, self.max_iou_distance, self.tracks,
+                iou_metric, self.max_iou_distance, self.tracks,
                 detections, iou_track_candidates, unmatched_detections)
 
         unmatched_tracks = list(set(unmatched_tracks_a + unmatched_tracks_b))
