@@ -46,7 +46,7 @@ class Tracker:
         else:
             self._match = self._match_with_iou
             self.iou_cache = {}
-            self.max_age = 2 # since ID is change rapidly, we dont need high max age
+            self.max_age = 1 # since ID is change rapidly, we dont need high max age
         
         self.max_iou_distance = max_iou_distance
         self.n_init = n_init
@@ -55,6 +55,9 @@ class Tracker:
         self.kf = kalman_filter.KalmanFilter()
         self.tracks = []
         self._next_id = 1
+
+    def get_id_count(self):
+        return self._next_id
 
     def predict(self):
         """Propagate track state distributions one time step forward.
