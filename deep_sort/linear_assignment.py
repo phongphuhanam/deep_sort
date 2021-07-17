@@ -13,9 +13,53 @@ except:
         return indices
 
 from . import kalman_filter
-
+import numba
 
 INFTY_COST = 1e+5
+
+try:
+    import numba
+    # raise Exception("skip")
+    print("Use Numba Optimization")
+    @numba.njit()
+    def match_det2track(indices, detection_indices, track_indices, cost_matrix,max_distance):
+        matches, unmatched_tracks, unmatched_detections = [], [], []
+        for col, detection_idx in enumerate(detection_indices):
+            if not np.any(indices[:,1] == col):
+                unmatched_detections.append(detection_idx)
+        for row, track_idx in enumerate(track_indices):
+            if not np.any(indices[:,0] == row):
+                unmatched_tracks.append(track_idx)
+        
+        for i in range(len(indices)):
+            row = indices[i,0] 
+            col = indices[i,1]
+            track_idx = track_indices[row]
+            detection_idx = detection_indices[col]
+            if cost_matrix[row, col] > max_distance:
+                unmatched_tracks.append(track_idx)
+                unmatched_detections.append(detection_idx)
+            else:
+                matches.append((track_idx, detection_idx))
+        return matches, unmatched_tracks, unmatched_detections
+except:
+    def match_det2track(indices, detection_indices, track_indices, cost_matrix,max_distance):
+        matches, unmatched_tracks, unmatched_detections = [], [], []
+        for col, detection_idx in enumerate(detection_indices):
+            if col not in indices[:, 1]:
+                unmatched_detections.append(detection_idx)
+        for row, track_idx in enumerate(track_indices):
+            if row not in indices[:, 0]:
+                unmatched_tracks.append(track_idx)
+        for row, col in indices:
+            track_idx = track_indices[row]
+            detection_idx = detection_indices[col]
+            if cost_matrix[row, col] > max_distance:
+                unmatched_tracks.append(track_idx)
+                unmatched_detections.append(detection_idx)
+            else:
+                matches.append((track_idx, detection_idx))
+        return matches, unmatched_tracks, unmatched_detections
 
 
 def min_cost_matching(
@@ -67,23 +111,9 @@ def min_cost_matching(
     cost_matrix[cost_matrix > max_distance] = max_distance + 1e-5
     indices = linear_assignment(cost_matrix)
 
-    matches, unmatched_tracks, unmatched_detections = [], [], []
-    for col, detection_idx in enumerate(detection_indices):
-        if col not in indices[:, 1]:
-            unmatched_detections.append(detection_idx)
-    for row, track_idx in enumerate(track_indices):
-        if row not in indices[:, 0]:
-            unmatched_tracks.append(track_idx)
-    for row, col in indices:
-        track_idx = track_indices[row]
-        detection_idx = detection_indices[col]
-        if cost_matrix[row, col] > max_distance:
-            unmatched_tracks.append(track_idx)
-            unmatched_detections.append(detection_idx)
-        else:
-            matches.append((track_idx, detection_idx))
-    return matches, unmatched_tracks, unmatched_detections
-
+    return match_det2track(indices, detection_indices, track_indices, \
+        cost_matrix, max_distance)
+    
 
 def matching_cascade(
         distance_metric, max_distance, cascade_depth, tracks, detections,
