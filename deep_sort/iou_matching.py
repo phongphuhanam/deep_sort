@@ -36,9 +36,9 @@ try:
         area_candidates = np.multiply(candidates[:, 2], candidates[:,3])
         return area_intersection / (area_bbox + area_candidates - area_intersection)
     
-    @numba.njit()
-    def cal_ioucost(candidates, cost_matrix, track_indices, bboxes):
-        for row, track_idx in enumerate(track_indices):
+    @numba.njit(parallel=True)
+    def cal_ioucost(candidates, cost_matrix, track_num, bboxes):
+        for row in numba.prange(track_num):
             cost_matrix[row, :] = 1. - iou(bboxes[row,:], candidates)
         return cost_matrix
 
@@ -77,8 +77,8 @@ except:
         area_candidates = candidates[:, 2:].prod(axis=1)
         return area_intersection / (area_bbox + area_candidates - area_intersection)
 
-    def cal_ioucost(candidates, cost_matrix, track_indices, bboxes):
-        for row, track_idx in enumerate(track_indices):
+    def cal_ioucost(candidates, cost_matrix, track_num, bboxes):
+        for row in range(track_num):
             cost_matrix[row, :] = 1. - iou(bboxes[row,:], candidates)
         return cost_matrix
 
@@ -154,9 +154,9 @@ def iou_cost2(tracks, detections, track_indices=None,
         detection_indices = np.arange(len(detections))
 
     cost_matrix = np.zeros((len(track_indices), len(detection_indices)))
-    candidates = np.asarray([detections[i].tlwh for i in detection_indices])
+    candidates = np.array([detections[i].tlwh for i in detection_indices])
     bboxes = np.asarray([tracks[track_idx].to_tlwh() for track_idx in track_indices])
-    return cal_ioucost(candidates, cost_matrix, track_indices, bboxes)
+    return cal_ioucost(candidates, cost_matrix, len(track_indices), bboxes)
     # for row, track_idx in enumerate(track_indices):
     #     # bbox = tracks[track_idx].to_tlwh()
     #     cost_matrix[row, :] = 1. - iou(bboxes[row,:], candidates)
