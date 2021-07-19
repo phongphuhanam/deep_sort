@@ -116,12 +116,13 @@ class Tracker:
             #     print()
             return iou_match
 
+        track_indices = np.arange(len(self.tracks)) 
         iou_track_candidates = [
-            k for k in np.arange(len(self.tracks)) if
+            k for k in track_indices if
             self.tracks[k].time_since_update <= self.max_age]
         
         unmatched_tracks_a  = [
-            k for k in np.arange(len(self.tracks)) if
+            k for k in track_indices if
             self.tracks[k].time_since_update > self.max_age]
 
         unmatched_detections = np.arange(len(detections))

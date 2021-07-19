@@ -4,7 +4,7 @@ import numpy as np
 from . import linear_assignment
 try:
     import numba
-    # @numba.njit()
+    @numba.njit()
     def iou(bbox, candidates):
         """Computer intersection over union.
 
@@ -31,10 +31,17 @@ try:
         br = np.minimum(bbox_br, candidates_br)
         wh = np.maximum(0, br-tl)
 
-        area_intersection = wh.prod(axis=1)
+        area_intersection = np.multiply(wh[:,0], wh[:,1])
         area_bbox = bbox[2:].prod()
-        area_candidates = candidates[:, 2:].prod(axis=1)
+        area_candidates = np.multiply(candidates[:, 2], candidates[:,3])
         return area_intersection / (area_bbox + area_candidates - area_intersection)
+    
+    @numba.njit()
+    def cal_ioucost(candidates, cost_matrix, track_indices, bboxes):
+        for row, track_idx in enumerate(track_indices):
+            cost_matrix[row, :] = 1. - iou(bboxes[row,:], candidates)
+        return cost_matrix
+
 except:
     def iou(bbox, candidates):
         """Computer intersection over union.
@@ -69,6 +76,11 @@ except:
         area_bbox = bbox[2:].prod()
         area_candidates = candidates[:, 2:].prod(axis=1)
         return area_intersection / (area_bbox + area_candidates - area_intersection)
+
+    def cal_ioucost(candidates, cost_matrix, track_indices, bboxes):
+        for row, track_idx in enumerate(track_indices):
+            cost_matrix[row, :] = 1. - iou(bboxes[row,:], candidates)
+        return cost_matrix
 
 def iou_cost(tracks, detections, track_indices=None,
              detection_indices=None):
@@ -143,11 +155,9 @@ def iou_cost2(tracks, detections, track_indices=None,
 
     cost_matrix = np.zeros((len(track_indices), len(detection_indices)))
     candidates = np.asarray([detections[i].tlwh for i in detection_indices])
-    for row, track_idx in enumerate(track_indices):
-        if tracks[track_idx].time_since_update > 1:
-            cost_matrix[row, :] = linear_assignment.INFTY_COST
-            continue
-
-        bbox = tracks[track_idx].to_tlwh()
-        cost_matrix[row, :] = 1. - iou(bbox, candidates)
-    return cost_matrix
+    bboxes = np.asarray([tracks[track_idx].to_tlwh() for track_idx in track_indices])
+    return cal_ioucost(candidates, cost_matrix, track_indices, bboxes)
+    # for row, track_idx in enumerate(track_indices):
+    #     # bbox = tracks[track_idx].to_tlwh()
+    #     cost_matrix[row, :] = 1. - iou(bboxes[row,:], candidates)
+    # return cost_matrix
