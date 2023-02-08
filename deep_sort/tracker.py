@@ -76,6 +76,7 @@ class Tracker:
             A list of detections at the current time step.
 
         """
+        missed_tracks=[]
         # Run matching cascade.
         matches, unmatched_tracks, unmatched_detections = \
             self._match(detections)
@@ -86,6 +87,7 @@ class Tracker:
                 self.kf, detections[detection_idx])
         for track_idx in unmatched_tracks:
             self.tracks[track_idx].mark_missed()
+            missed_tracks.append(self.tracks[track_idx])
         for detection_idx in unmatched_detections:
             self._initiate_track(detections[detection_idx])
         
@@ -103,6 +105,8 @@ class Tracker:
                 track.features = []
             self.metric.partial_fit(
                 np.asarray(features), np.asarray(targets), active_targets)
+            
+        return missed_tracks
 
 
     def _match_with_iou(self, detections):
