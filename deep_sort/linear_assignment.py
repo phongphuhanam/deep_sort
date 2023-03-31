@@ -19,7 +19,7 @@ INFTY_COST = 1e+5
 
 try:
     import numba
-    # raise Exception("skip")
+    raise Exception("skip")
     print("Use Numba Optimization")
     @numba.njit()
     def match_det2track(indices, detection_indices, track_indices, cost_matrix,max_distance):
