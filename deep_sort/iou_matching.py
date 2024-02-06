@@ -4,6 +4,7 @@ import numpy as np
 from . import linear_assignment
 try:
     import numba
+    raise Exception('skip numba')
     @numba.njit()
     def iou(bbox, candidates):
         """Computer intersection over union.
