@@ -40,13 +40,12 @@ class Tracker:
 
     def __init__(self, metric, max_iou_distance=0.7, max_age=30, n_init=3, init_score=0.9):
         self.metric = metric
+        self.max_age = max_age
         if self.metric is not None:
             self._match = self._match_with_features
-            self.max_age = max_age
         else:
             self._match = self._match_with_iou
             self.iou_cache = {}
-            self.max_age = 1 # since ID is change rapidly, we dont need high max age
         
         self.max_iou_distance = max_iou_distance
         self.n_init = n_init
